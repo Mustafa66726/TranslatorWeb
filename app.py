@@ -35,7 +35,26 @@ cache_lock = threading.Lock()
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
 
-ARABIC_FONT_PATH = "C:/Windows/Fonts/arial.ttf"
+# تعريف مسار الخط
+ARABIC_FONT_PATH = os.path.join(os.path.dirname(__file__), 'fonts', 'arial.ttf')
+FONTS_DIR = os.path.join(os.path.dirname(__file__), 'fonts')
+
+# إنشاء مجلد الخطوط إذا لم يكن موجوداً
+if not os.path.exists(FONTS_DIR):
+    os.makedirs(FONTS_DIR)
+
+# التحقق من وجود ملف الخط
+def ensure_font_file():
+    if not os.path.exists(ARABIC_FONT_PATH):
+        windows_font = "C:/Windows/Fonts/arial.ttf"
+        if os.path.exists(windows_font):
+            import shutil
+            shutil.copy2(windows_font, ARABIC_FONT_PATH)
+        else:
+            raise Exception("ملف الخط غير موجود")
+
+ensure_font_file()
+
 pdfmetrics.registerFont(TTFont('Arabic', ARABIC_FONT_PATH))
 
 def allowed_file(filename):
@@ -184,13 +203,12 @@ def create_translated_pdf(output_path, original_path, translated_elements, targe
                 
                 # تعيين حجم الخط والنمط
                 font_size = element.font_size if element.font_size else 11
-                font_name = element.font_name if element.font_name else 'Arabic'
                 
-                # إضافة النص
+                # إضافة النص مع تحديد ملف الخط
                 page.insert_text(
                     text_rect.tl,  # النقطة العلوية اليسرى
                     text,
-                    fontname=font_name,
+                    fontfile=ARABIC_FONT_PATH,
                     fontsize=font_size,
                     color=element.color if element.color else (0, 0, 0)
                 )
