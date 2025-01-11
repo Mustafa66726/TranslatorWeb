@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify, send_file, Response
 from deep_translator import GoogleTranslator
-import pymupdf as fitz  # PyMuPDF
+from PyPDF2 import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfbase import pdfmetrics
@@ -19,6 +19,7 @@ import threading
 import time
 import json
 import re
+import io
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -133,153 +134,78 @@ def handle_arabic_text(text):
         print(f"Error in handle_arabic_text: {str(e)}")
         return text
 
-class PDFElement:
-    def __init__(self, type, content, rect, font_size=None, font_name=None, color=None):
-        self.type = type  # 'text', 'image', 'table', etc.
-        self.content = content
-        self.rect = rect  # (x0, y0, x1, y1)
-        self.font_size = font_size
-        self.font_name = font_name
-        self.color = color
-
-def extract_pdf_elements(pdf_path):
-    """استخراج جميع عناصر PDF مع تحسين الأداء"""
-    doc = fitz.open(pdf_path)
-    elements = []
-    
-    for page_num in range(len(doc)):
-        page = doc[page_num]
-        
-        # استخراج النص بشكل أكثر كفاءة
-        text_blocks = page.get_text("blocks")
-        for block in text_blocks:
-            if block[6] == 0:  # نص عادي
-                elements.append(PDFElement(
-                    'text',
-                    block[4],
-                    (block[0], block[1], block[2], block[3]),
-                    font_size=block[5]
-                ))
-        
-        # استخراج الصور
-        images = page.get_images(full=True)
-        for img_index, img_info in enumerate(images):
-            xref = img_info[0]
-            base_image = doc.extract_image(xref)
-            elements.append(PDFElement(
-                'image',
-                base_image["image"],
-                page.get_image_bbox(img_info),
-            ))
-            
-    doc.close()
-    return elements
-
-def create_translated_pdf(output_path, original_path, translated_elements, target_lang='ar'):
-    """إنشاء PDF مترجم مع الحفاظ على التنسيق الأصلي"""
+def extract_text_from_pdf(pdf_path):
+    """استخراج النص من ملف PDF"""
+    text_content = []
     try:
-        # إنشاء PDF جديد
-        doc = fitz.open()
-        original_doc = fitz.open(original_path)
-        
-        # نسخ الصفحات من الملف الأصلي
-        doc.insert_pdf(original_doc)
-        
-        # معالجة كل عنصر مترجم
-        for element in translated_elements:
-            if element.type == 'text':
-                # تحديد الصفحة المناسبة
-                page = doc[0]  # نفترض أن كل العناصر في الصفحة الأولى حالياً
-                
-                # إضافة النص المترجم
-                text_rect = fitz.Rect(element.rect)
-                # مسح المنطقة القديمة
-                page.draw_rect(text_rect, color=None, fill=(1, 1, 1))
-                
-                # إضافة النص الجديد
-                text = element.content
-                if target_lang == 'ar':
-                    text = handle_arabic_text(text)
-                
-                # تعيين حجم الخط والنمط
-                font_size = element.font_size if element.font_size else 11
-                
-                # إضافة النص مع تحديد ملف الخط
-                page.insert_text(
-                    text_rect.tl,  # النقطة العلوية اليسرى
-                    text,
-                    fontfile=ARABIC_FONT_PATH,
-                    fontsize=font_size,
-                    color=element.color if element.color else (0, 0, 0)
-                )
-            
-            elif element.type == 'image':
-                # معالجة الصور إذا لزم الأمر
-                pass
-        
-        # حفظ الملف النهائي
-        doc.save(output_path)
-        doc.close()
-        original_doc.close()
-        return True
-        
+        reader = PdfReader(pdf_path)
+        for page in reader.pages:
+            text = page.extract_text()
+            if text.strip():
+                text_content.append(text)
     except Exception as e:
-        print(f"Error creating PDF: {str(e)}")
-        traceback.print_exc()
+        print(f"خطأ في استخراج النص: {str(e)}")
+    return text_content
+
+def create_translated_pdf(output_path, texts, target_lang='ar'):
+    """إنشاء PDF مترجم"""
+    try:
+        doc = SimpleDocTemplate(
+            output_path,
+            pagesize=letter,
+            rightMargin=72,
+            leftMargin=72,
+            topMargin=72,
+            bottomMargin=72
+        )
+
+        story = []
+        styles = getSampleStyleSheet()
+        arabic_style = ParagraphStyle(
+            'Arabic',
+            parent=styles['Normal'],
+            fontName='Arabic',
+            fontSize=12,
+            leading=14,
+            alignment=1 if target_lang == 'ar' else 0
+        )
+
+        for text in texts:
+            p = Paragraph(text, arabic_style)
+            story.append(p)
+            story.append(Spacer(1, 12))
+
+        doc.build(story)
+        return True
+    except Exception as e:
+        print(f"خطأ في إنشاء PDF: {str(e)}")
         return False
 
 def process_pdf_translation(input_path, target_lang, task_id):
-    """معالجة ترجمة PDF مع التحسينات الجديدة"""
+    """معالجة ترجمة PDF"""
     try:
-        # استخراج العناصر
-        elements = extract_pdf_elements(input_path)
-        total_elements = len([e for e in elements if e.type == 'text'])
-        processed = 0
+        # استخراج النصوص
+        texts = extract_text_from_pdf(input_path)
+        total_texts = len(texts)
+        translated_texts = []
         
-        # تجميع النصوص للترجمة المتوازية
-        text_elements = [e for e in elements if e.type == 'text']
-        chunks = []
-        for element in text_elements:
-            element_chunks = chunk_text(element.content)
-            chunks.extend(element_chunks)
+        # ترجمة النصوص
+        for i, text in enumerate(texts):
+            translated = translate_chunk(text, target_lang)
+            if target_lang == 'ar':
+                translated = handle_arabic_text(translated)
+            translated_texts.append(translated)
+            progress = ((i + 1) / total_texts) * 100
+            update_progress(task_id, progress)
         
-        # ترجمة متوازية للنصوص
-        with ThreadPoolExecutor(max_workers=min(10, len(chunks))) as executor:
-            translations_future = {executor.submit(translate_chunk, chunk, target_lang): chunk for chunk in chunks}
-            
-            # تجميع الترجمات
-            translations = {}
-            for future in translations_future:
-                original = translations_future[future]
-                translation = future.result()
-                translations[original] = translation
-                processed += 1
-                progress = (processed / total_elements) * 100
-                update_progress(task_id, progress)
-        
-        # إنشاء العناصر المترجمة
-        translated_elements = []
-        for element in elements:
-            if element.type == 'text':
-                translated_content = translations.get(element.content, element.content)
-                translated_elements.append(PDFElement(
-                    element.type,
-                    translated_content,
-                    element.rect,
-                    element.font_size,
-                    element.font_name,
-                    element.color
-                ))
-            else:
-                translated_elements.append(element)
-        
-        # إنشاء ملف PDF المترجم
+        # إنشاء PDF المترجم
         output_path = os.path.join(app.config['UPLOAD_FOLDER'], f'translated_{task_id}.pdf')
-        create_translated_pdf(output_path, input_path, translated_elements, target_lang)
-        
-        update_progress(task_id, 100, "اكتملت الترجمة")
-        return output_path
-        
+        if create_translated_pdf(output_path, translated_texts, target_lang):
+            update_progress(task_id, 100, "اكتملت الترجمة")
+            return output_path
+        else:
+            raise Exception("فشل في إنشاء ملف PDF المترجم")
+            
     except Exception as e:
         print(f"خطأ في معالجة الملف: {str(e)}")
         traceback.print_exc()
