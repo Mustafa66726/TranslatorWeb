@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مترجم النصوص والملفات</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #2c3e50;
+            --success-color: #27ae60;
+            --error-color: #e74c3c;
+            --background-color: #f5f7fa;
+            --card-background: #ffffff;
+            --border-radius: 12px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: var(--background-color);
+            color: var(--secondary-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: var(--secondary-color);
+            font-size: 1.2em;
+        }
+
+        .card {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: var(--box-shadow);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .card h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--secondary-color);
+            font-weight: 500;
+        }
+
+        select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: var(--border-radius);
+            font-family: 'Tajawal', sans-serif;
+            font-size: 1em;
+            transition: var(--transition);
+        }
+
+        select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-label {
+            display: block;
+            padding: 12px;
+            background: #e1e8ed;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .file-label:hover {
+            background: #d1d8dd;
+        }
+
+        .button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            transition: var(--transition);
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .button:hover {
+            background: #357abd;
+            transform: translateY(-2px);
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            background: #f8f9fa;
+            min-height: 100px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .success {
+            color: var(--success-color);
+            padding: 10px;
+            border-radius: var(--border-radius);
+            background: rgba(39, 174, 96, 0.1);
+        }
+
+        .error {
+            color: var(--error-color);
+            padding: 10px;
+            border-radius: var(--border-radius);
+            background: rgba(231, 76, 60, 0.1);
+        }
+
+        .progress-container {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            background: #f8f9fa;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e1e8ed;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            text-align: center;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .progress-status {
+            text-align: center;
+            color: var(--secondary-color);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>مترجم النصوص والملفات</h1>
+            <p>ترجم النصوص وملفات PDF بسهولة وسرعة</p>
+        </div>
+
+        <!-- قسم ترجمة النصوص -->
+        <div class="card">
+            <h2>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 20h9M3 20h3m3 0h3M12 4v16M8 8l8-4M16 8l-8-4"/>
+                </svg>
+                ترجمة النص
+            </h2>
+            <div class="form-group">
+                <label for="target_lang">اختر اللغة الهدف:</label>
+                <select id="target_lang" name="target_lang">
+                    <option value="ar">العربية</option>
+                    <option value="en">الإنجليزية</option>
+                    <option value="fr">الفرنسية</option>
+                    <option value="es">الإسبانية</option>
+                    <option value="de">الألمانية</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="text">النص المراد ترجمته:</label>
+                <textarea id="text" rows="5" placeholder="اكتب النص هنا..."></textarea>
+            </div>
+            <button onclick="translateText()" class="button">ترجم النص</button>
+            <div id="text-result" class="result"></div>
+        </div>
+
+        <!-- قسم ترجمة ملفات PDF -->
+        <div class="card">
+            <h2>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10 9 9 9 8 9"/>
+                </svg>
+                ترجمة ملف PDF
+            </h2>
+            <form id="pdf-form" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="pdf_target_lang">اختر اللغة الهدف:</label>
+                    <select id="pdf_target_lang" name="target_lang">
+                        <option value="ar">العربية</option>
+                        <option value="en">الإنجليزية</option>
+                        <option value="fr">الفرنسية</option>
+                        <option value="es">الإسبانية</option>
+                        <option value="de">الألمانية</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <input type="file" id="pdf_file" name="file" accept=".pdf" class="file-input" required>
+                    <label for="pdf_file" class="file-label">اختر ملف PDF</label>
+                </div>
+                <button type="button" onclick="translatePDF()" class="button">ترجم الملف</button>
+            </form>
+            <div id="pdf-result" class="result"></div>
+            <div class="progress-container" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <div class="progress-text">0%</div>
+                <div class="progress-status">جاري التحميل...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // تحديث اسم الملف المختار
+        document.getElementById('pdf_file').addEventListener('change', function(e) {
+            const fileName = e.target.files[0]?.name || 'اختر ملف PDF';
+            document.querySelector('.file-label').textContent = fileName;
+        });
+
+        function translateText() {
+            const text = document.getElementById('text').value;
+            const targetLang = document.getElementById('target_lang').value;
+            const resultDiv = document.getElementById('text-result');
+
+            if (!text) {
+                resultDiv.innerHTML = '<div class="error">الرجاء إدخال نص للترجمة</div>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="loading"></div>';
+
+            fetch('/translate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    text: text,
+                    target_lang: targetLang
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    resultDiv.innerHTML = `<div class="error">خطأ: ${data.error}</div>`;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <strong>النص المترجم:</strong><br>
+                            ${data.translated_text}
+                        </div>`;
+                }
+            })
+            .catch(error => {
+                resultDiv.innerHTML = `<div class="error">حدث خطأ في الترجمة</div>`;
+            });
+        }
+
+        function translatePDF() {
+            const fileInput = document.getElementById('pdf_file');
+            const targetLang = document.getElementById('pdf_target_lang').value;
+            const resultDiv = document.getElementById('pdf-result');
+            const progressContainer = document.querySelector('.progress-container');
+            const progressFill = document.querySelector('.progress-fill');
+            const progressText = document.querySelector('.progress-text');
+            const progressStatus = document.querySelector('.progress-status');
+
+            if (!fileInput.files[0]) {
+                resultDiv.innerHTML = '<div class="error">الرجاء اختيار ملف PDF</div>';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('target_lang', targetLang);
+
+            resultDiv.innerHTML = '';
+            progressContainer.style.display = 'block';
+            progressFill.style.width = '0%';
+            progressText.textContent = '0%';
+            progressStatus.textContent = 'جاري التحميل...';
+
+            // بدء عملية الترجمة
+            fetch('/translate-pdf', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                const task_id = data.task_id;
+                checkProgress(task_id);
+            })
+            .catch(error => {
+                progressContainer.style.display = 'none';
+                resultDiv.innerHTML = `<div class="error">حدث خطأ: ${error.message}</div>`;
+            });
+        }
+
+        function checkProgress(task_id) {
+            const progressFill = document.querySelector('.progress-fill');
+            const progressText = document.querySelector('.progress-text');
+            const progressStatus = document.querySelector('.progress-status');
+            const resultDiv = document.getElementById('pdf-result');
+            const progressContainer = document.querySelector('.progress-container');
+
+            fetch(`/translation-progress/${task_id}`)
+            .then(response => response.json())
+            .then(data => {
+                progressFill.style.width = `${data.progress}%`;
+                progressText.textContent = `${data.progress}%`;
+                progressStatus.textContent = data.status;
+
+                if (data.progress < 100 && data.status !== "حدث خطأ") {
+                    // استمرار في التحقق من التقدم
+                    setTimeout(() => checkProgress(task_id), 1000);
+                } else if (data.status === "اكتملت الترجمة") {
+                    // تحميل الملف المترجم
+                    window.location.href = `/download-translation/${task_id}`;
+                    progressContainer.style.display = 'none';
+                    resultDiv.innerHTML = '<div class="success">تم ترجمة الملف بنجاح وبدأ التحميل</div>';
+                } else if (data.status.includes("خطأ")) {
+                    progressContainer.style.display = 'none';
+                    resultDiv.innerHTML = `<div class="error">${data.status}</div>`;
+                }
+            })
+            .catch(error => {
+                progressContainer.style.display = 'none';
+                resultDiv.innerHTML = `<div class="error">حدث خطأ في متابعة التقدم</div>`;
+            });
+        }
+    </script>
+</body>
+</html>
